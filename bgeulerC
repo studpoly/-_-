@@ -1,0 +1,174 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+double get_X(double x, double y, double t){
+    return -x*y + sin(t)/t;
+}
+
+double get_Y(double y, double t){
+    return -pow(y,2) + (3.4*t)/(1 + pow(t,2));
+}
+
+void bg_euler(){
+    int j, i = 0;
+    double t_1, start_t = 0.0;
+    double end_t = 1.0;
+
+    double A[2][2], J[2][2];
+    float h_max = 0.01;
+    float h = 0.001;
+    float h_1 = h;
+    float h_2 = 0.0;
+    float eps = 0.001;
+    float determinant;
+
+    double x = 0.0;
+    double y = -0.412;
+    double x0, y0;
+
+    double x_1 = x;
+    double y_1 = y;
+    double x_2 = 0.0;
+    double y_2 = 0.0;
+    double u10 = x;
+    double u20 = y;
+    double dx,dy,d11,d12, a, b;
+
+    double u1,u2,e1,e2, H, d21,d22;
+    double D1 = 1.0;
+    double D2 = 1.0;
+    while(i < 2){
+        t_1 = start_t + h;
+        D1 = 1.0;
+        D2 = 1.0;
+        while(D1 > 0.001 && D2 > 0.001){
+            x0 = x;
+            y0 = y;
+            A[0][0] = 1 + h*y;
+            A[0][1] = h*x;
+            A[1][0] = 0.0;
+            A[1][1] = 1+2*h*y;
+
+            determinant = A[0][0]*A[1][1] - A[1][0]*A[0][1];
+            if(0.0 == determinant){
+                printf("Определитель равен 0!\n");
+                return;
+            }
+
+            J[0][0] = A[1][1]/determinant;
+            J[0][1] = -A[0][1]/determinant;
+            J[1][0] = -A[1][0]/determinant;
+            J[1][1] = A[0][0]/determinant;
+
+            dx = -J[0][0]*(x-x_1-h*(-x*y+sin(t_1)/t_1)) + -J[0][1]*(y-y_1-h*(-pow(y,2)+3.4*t_1/(1+pow(t_1,2))));
+            dy = -J[1][0]*(x-x_1-h*(-x*y+sin(t_1)/t_1)) + -J[1][1]*(y-y_1-h*(-pow(y,2)+3.4*t_1/(1+pow(t_1,2))));
+
+            x = x + dx;
+            y = y + dy;
+
+            d11 = fabs(x-x0);
+            d12 = fabs(y-y0);
+            if(d11 > d12){
+                D1 = d11;
+            }
+            else{
+                D1 = d12;
+            }
+
+            d21 = fabs((x-x0)/x);
+            d22 = fabs((y-y0)/y);
+            if(d21 > d22){
+                D2 = d21;
+            }
+            else{
+                D2 = d22;
+            }
+
+        }
+        u1 = u10 + h*get_X(x,y,t_1);
+        u2 = u20 + h*get_Y(y,t_1);
+
+        e1 = -(h/(h + h_1))*(x-u10-(h/h_1)*(u10-x_1));
+        e2 = -(h/(h + h_1))*(y-u20-(h/h_1)*(u20-y_1));
+
+        if(fabs(e1)>eps || fabs(e2)> eps){
+            h = h/2;
+            t_1 = start_t;
+            x = u10;
+            y = u20;
+        }
+        else{
+            if(fabs(e1)>eps){
+                a = h/2;
+            }
+            else if(fabs(e1)>eps/4 && fabs(e1)<=eps){
+                a = h;
+            }
+            else if(fabs(e1)<=eps/4){
+                a = 2*h;
+            }
+
+
+            if(fabs(e2)>eps){
+                b = h/2;
+            }
+            else if(fabs(e2)>eps/4 && fabs(e2)<=eps){
+                b = h;
+            }
+            else if(fabs(e2)<=eps/4){
+                b = 2*h;
+            }
+
+            if(a > b){
+                H = b;
+            }
+            else{
+                H = a;
+            }
+            if(H > h_max){
+                H = h_max;
+            }
+            x = u1;
+            y = u2;
+            x_2 = x_1;
+            y_2 = y_2;
+            x_1 = u10;
+            y_1 = u20;
+            u10 = x;
+            u20 = y;
+            h_2 = h_1;
+            h_1 = h;
+            h = H;
+            start_t = t_1;
+
+            i += 1;
+        }
+    }
+    while(start_t < end_t){
+        t_1 = start_t + h;
+
+        u1 = u10 + h*get_X(x,y,t_1);
+        u2 = u20 + h*get_Y(y,t_1);
+        x = u1;
+        y = u2;
+        x_2 = x_1;
+        y_2 = y_2;
+        x_1 = u10;
+        y_1 = u20;
+        u10 = x;
+        u20 = y;
+        start_t = t_1;
+        ++i;
+    }
+
+    printf("\n u1 = %lf\n", u1);
+    printf(" u2 = %lf\n", u2);
+    printf("\n Iter: %d\n\n", i);
+}
+
+int main(){
+    bg_euler();
+    return 0;
+
+}
